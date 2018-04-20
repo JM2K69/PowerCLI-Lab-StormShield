@@ -5,7 +5,6 @@ $ProgressPreference = 'SilentlyContinue'
 [System.Reflection.Assembly]::LoadFrom('assembly\System.Windows.Interactivity.dll') | out-null
 Add-Type -AssemblyName "System.Windows.Forms"
 Add-Type -AssemblyName "System.Drawing"
-
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 
@@ -160,11 +159,11 @@ $clean_SC2 = $Cleans_Xaml.findname("Clean_2")
 #                        Variables                                      #
 #########################################################################
 $OVAFolder = $pathPanel +"\OVA"
-$Appliance_Debian_Company =$OVAFolder +"\DEBIAN_TRANING_company.ova"
-$Appliance_Debian_Trainer = $OVAFolder +"\DEBIAN_TRANING_trainer.ova"
-$Appliance_SNS_Trainer = $OVAFolder +"\SNS_TRAINING_trainer.ova"
-$Appliance_SNS_Company = $OVAFolder +"\SNS_TRAINING_company.ova"
-$Appliance_RTR_StormShield = $OVAFolder +"\RTR_StormShield.ova"
+$Appliance_Debian_Company =$OVAFolder +"\DEBIAN_TRANING_company.ovf"
+$Appliance_Debian_Trainer = $OVAFolder +"\DEBIAN_TRANING_trainer.ovf"
+$Appliance_SNS_Trainer = $OVAFolder +"\SNS_TRAINING_trainer.ovf"
+$Appliance_SNS_Company = $OVAFolder +"\SNS_TRAINING_company.ovf"
+$Appliance_RTR_StormShield = $OVAFolder +"\RTR_StormShield.ovf"
 $separator =", "
 $list = New-Object System.Collections.ArrayList
 $Global:Reseaux_SC1 = [ordered] @{
@@ -424,7 +423,7 @@ function Test-AutoLogin  {
 	$AutoLogin.Visibility ="Visible"
 	$KeyFile = $Global:pathPanel+"\"+"AES.key"
 	$MgrCreds = $Global:pathPanel+"\"+"account_Creds.xml"
-	$HostFile = $Global:pathPanel+"\"+"Host.txt"
+	
 		If (Test-Path $KeyFile) {
 		My-logger "AES Key is present"
 		$test += 1
@@ -435,23 +434,140 @@ function Test-AutoLogin  {
 			$test += 1
 			My-logger "Continuing..."
 		}
-		If (Test-Path $HostFile) {
-			My-logger "Host.txt is present"
-			$test += 1
-			My-logger "Continuing..."
-		}
-		
-		if ($test -eq 3) {
+				
+		if ($test -eq 2) {
 			My-logger "All Files are present"
 			$AutoLogin.Visibility ="Visible"
-			My-Logger "Show Button"
+			My-Logger "Show Autologin Button"
+			$SaveCred.Visibility = "Hidden"
+				My-Logger "Hide Save Credential Button"
 		}
 		else {
 			$AutoLogin.Visibility ="Hidden"
+			My-Logger "Hidden Autologin Button"
 		}
 
 
 }
+function Test-RegKey {
+	[cmdletbinding()]
+	Param(
+		[Parameter(Position=0)]
+		[System.String]$Path,
+		
+		[Parameter(Position=1)]
+		[System.String]$Key
+	)
+
+    if ($Key.IsPresent)
+    {
+
+    (Test-Path $Path) -and  (Get-ItemProperty $Path).$Key
+    }
+    else
+        {
+        (Test-Path $Path)
+        }
+    }
+function New-RegKeyProduct
+ {
+     [CmdletBinding()]
+     Param
+     (
+                 
+         [Parameter(Mandatory = $true)]
+         [ValidateSet("JM2K69")]   
+         [String]$Author,
+         [ValidateSet("StormShield","PhotonOS","Docker")]
+         [String]$Product,
+         [ValidateSet("AES_Key_Hash")]
+         [Parameter(Mandatory = $true)]
+         [String]$Key,
+         $Value
+
+     )
+ 
+     $test = Test-RegKey -Path HKCU:\Software\$Author\$Product -Key $key
+     $testA = Test-RegKey -Path HKCU:\Software\$Author
+    if ($test -eq $true)
+    { }
+    else
+    {
+       if ($testA -eq $true)
+       {
+            New-Item -Path HKCU:\Software\$Author -Name $Product |Out-Null
+            New-ItemProperty -path HKCU:\Software\$Author\$Product -Name $key -Value $Value |Out-Null
+
+       }
+       else
+       {    
+            New-Item -Path HKCU:\Software -Name $Author |Out-Null
+            New-Item -Path HKCU:\Software\$Author -Name $Product |Out-Null
+            New-ItemProperty -path HKCU:\Software\$Author\$Product -Name $key -Value $Value |Out-Null
+        }
+
+    }
+    
+        
+    
+ }
+ function Read-RegKeyProduct
+ {
+     [CmdletBinding()]
+     Param
+     (
+         [Parameter(Mandatory = $true)]
+         [ValidateSet("JM2K69")]   
+         [String]$Author,
+         [ValidateSet("StormShield","PhotonOS","Docker")]
+         [String]$Product,
+         [ValidateSet("AES_Key_Hash")]
+         [Parameter(Mandatory = $true)]
+         [String]$Key
+         
+
+     )
+ 
+     $test = Test-RegKey -Path HKCU:\Software\$Author\$Product -Key $key
+     
+    if ($test -eq $true)
+        { 
+            $AESKey = (Get-ItemProperty -Path HKCU:\Software\$Author\$Product\ -Name $Key).AES_Key_Hash
+            return  $AESKey
+        }
+    else
+        {
+            write-warning "Key not found" 
+        }
+    
+ }
+function Remove-RegKeyProduct
+ {
+     [CmdletBinding()]
+     Param
+     (
+         [Parameter(Mandatory = $true)]
+         [ValidateSet("JM2K69")]   
+         [String]$Author,
+         [ValidateSet("StormShield","PhotonOS","Docker")]
+         [String]$Product,
+         [ValidateSet("AES_Key_Hash")]
+         [Parameter(Mandatory = $true)]
+         [String]$Key
+         
+
+     )
+ 
+     $test = Test-RegKey -Path HKCU:\Software\$Author\$Product -Key $key
+
+    if ($test -eq $true)
+        { 
+            Remove-ItemProperty -Path HKCU:\Software\$Author\$Product\ -Name $Key
+            Remove-Item -Path HKCU:\Software\$Author\$Product
+        }
+    
+ }
+
 #########################################################################
 #                        Controls                                       #
 #########################################################################
@@ -476,9 +592,12 @@ Else {
 $Key = New-Object Byte[] 16   # You can use 16, 24, or 32 for AES
 [Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($Key)
 $Key | out-file $KeyFile
+$hash=Get-FileHash $KeyFile
+New-RegKeyProduct -Author JM2K69 -Product StormShield -Key AES_Key_Hash -Value $hash.hash
+
 }
 
-	##Create Secure XML Credential File for vCenter/NSX Access
+	
 
 	$MgrCreds = $Global:pathPanel+"\"+"account_Creds.xml"
 	If (Test-Path $MgrCreds){
@@ -486,26 +605,28 @@ $Key | out-file $KeyFile
 	My-logger "Continuing..."
 	$ImportObject = Import-Clixml $MgrCreds
 	$SecureString = ConvertTo-SecureString -String $ImportObject.Password -Key $Key
-	$MyCredential = New-Object System.Management.Automation.PSCredential($ImportObject.UserName, $SecureString)
+	$UserName = $ImportObject.UserName.Split("#")[0]
+	$Global:vcenter = $ImportObject.UserName.Split("#")[1]
+	$MyCredential = New-Object System.Management.Automation.PSCredential($UserName, $SecureString)
 	}
 	Else {
 	
 	$Global:vcenter = $Host_Connection.text.tostring()
-	$Global:vcenter | Out-File "$Global:pathPanel\Host.txt"
 	$Global:User= $Utilisateur.text.tostring()
 	$Global:pass_value = $PasswordBox.password.tostring()
 	$Password = $Global:pass_value | ConvertTo-SecureString -AsPlainText -Force
 	
 	
 	$exportObject = New-Object psobject -Property @{
-		UserName = $Global:User
+		UserName = $Global:User+"#"+$Global:vcenter
 		Password = ConvertFrom-SecureString -SecureString $password -Key $Key
 	}
 
 	$exportObject | Export-Clixml $MgrCreds
 	$MyCredential = $newPScreds
 	}
-
+	$SaveCred.Visibility = "Hidden"
+	[MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($Form,"Sauvegarde","Les donnees de connections ont bien ete sauvegardees.." )
 
 })
 	$AutoLogin.add_Click({
@@ -513,46 +634,93 @@ $Key | out-file $KeyFile
 		My-Logger "##################"
 		My-Logger "#   Autologin  #"
 		My-Logger "##################"
-	
-		$HostFile = $Global:pathPanel+"\"+"Host.txt"
-		$Key = Get-Content  "$Global:pathPanel\AES.key"
-		$Global:vcenter = Get-Content $HostFile
+		$EndFuntion = $false
+		try 
+		{
+			$FindKey = Test-RegKey  -Path HKCU:\Software\JM2K69\StormShield -Key AES_Key_Hash
+			if ($FindKey -eq $false)
+			{
+				$EndFuntion = $true
+				Remove-Item "$Global:pathPanel\AES.key" -Force | Out-Null
+				Remove-Item $MgrCreds -Force | Out-Null
+
+			}
+			$readOriginalAES = Read-RegKeyProduct -Author JM2K69 -Product StormShield -Key AES_Key_Hash 
+			$HashRead = Get-FileHash "$Global:pathPanel\AES.key"
+			
+
+			if($readOriginalAES -eq $HashRead) 
+			{
+				$Key = Get-Content  "$Global:pathPanel\AES.key"
+				$EndFuntion = $false
+			}
+			else
+			{
+				$EndFuntion = $true
+				Remove-Item "$Global:pathPanel\AES.key" -Force | Out-Null
+				Remove-RegKeyProduct -Author JM2K69 -Product StormShield -Key AES_Key_Hash
+				Remove-Item $MgrCreds -Force | Out-Null
+			}
+	}
+	catch{}
 
 		$MgrCreds = $Global:pathPanel+"\"+"account_Creds.xml"
 		If (Test-Path $MgrCreds){
 		My-Logger "account_Creds.xml file found"
-		My-logger "Continuing..."
+		
 		$ImportObject = Import-Clixml $MgrCreds
-		$SecureString = ConvertTo-SecureString -String $ImportObject.Password -Key $Key
-		$MyCredential = New-Object System.Management.Automation.PSCredential($ImportObject.UserName, $SecureString)
-	
-		}
-		Connect-VIServer -Server $Global:vcenter -Credential $MyCredential
-
-		if ( $Global:DefaultVIServer[0].name -ne $null) 
+		
+		try
+			{
+				
+				$SecureString = ConvertTo-SecureString -String $ImportObject.Password -Key $Key -WarningAction SilentlyContinue
+				
+			}
+		catch
+			{
+				Remove-Item $MgrCreds -Force | Out-Null
+				Remove-Item "$Global:pathPanel\AES.key" -Force | Out-Null
+				Remove-RegKeyProduct -Author JM2K69 -Product StormShield -Key AES_Key_Hash
+				[MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($Form,"Erreur","Les donnees ont ete alterees : Autologin Impossible. Par mesure de securite les donnees ont ete detruites." )
+				$EndFuntion = $true
+				$AutoLogin.Visibility ="Hidden"
+				My-Logger "Hidden Autologin Button"
+				$SaveCred.Visibility = "Visible"
+				My-Logger "Show Save Credential Button"
+			}
+				
+		if ($EndFuntion -eq $false)
 		{
-			$vCenter = $Global:DefaultVIServer[0].name
-			My-Logger "Connection successfull to vCenter $vCenter "
-			$Parametres.Visibility="Visible"
-			$Status_Connection_Info.Content = "Connect"
-			$Status_Connection_Info.Foreground ="Green"
+			$UserName = $ImportObject.UserName.Split("#")[0]
+			$Global:vcenter = $ImportObject.UserName.Split("#")[1]
+			$MyCredential = New-Object System.Management.Automation.PSCredential($UserName, $SecureString)
+		
+			Connect-VIServer -Server $Global:vcenter -Credential $MyCredential
 
-			$Icon_NC.Visibility="1"
-			$Icon_C.Visibility="0"
+			if ( $Global:DefaultVIServer[0].name -ne $null) 
+			{
+				$vCenter = $Global:DefaultVIServer[0].name
+				My-Logger "Connection successfull to vCenter $vCenter "
+				$Parametres.Visibility="Visible"
+				$Status_Connection_Info.Content = "Connect"
+				$Status_Connection_Info.Foreground ="Green"
 
-			[System.Windows.Forms.Application]::DoEvents()
-			[MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($Form,"Connection","Vous etes connectez au vCenter $Global:vcenter vous devez maintenant definir les parametres, DataStore, vSwitch et PortGroup permettant d'acceder a Internet. " )
-			[System.Windows.Forms.Application]::DoEvents()
+				$Icon_NC.Visibility="1"
+				$Icon_C.Visibility="0"
 
-		}
-		else {
-			$Status_Connection_Info.Content = " Not Connected"
-			$Status_Connection_Info.Foreground ="Red"
-		}
+				[System.Windows.Forms.Application]::DoEvents()
+				[MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($Form,"Connection","Vous etes connectez au vCenter $Global:vcenter vous devez maintenant definir les parametres, DataStore, vSwitch et PortGroup permettant d'acceder a Internet. " )
+				[System.Windows.Forms.Application]::DoEvents()
 
-	$InfoDataStore = Get-Datastore
-	$InfovSwitch = Get-VirtualSwitch
-	$Info_Internet = Get-VirtualPortGroup
+			}
+			else {
+				$Status_Connection_Info.Content = " Not Connected"
+				$Status_Connection_Info.Foreground ="Red"
+			}
+
+			$InfoDataStore = Get-Datastore
+			$InfovSwitch = Get-VirtualSwitch
+			$Info_Internet = Get-VirtualPortGroup
 
 			foreach ($data in $InfoDataStore)
 			{
@@ -584,7 +752,8 @@ $Key | out-file $KeyFile
 
 			}
 
-	
+		}
+	}
 
 	})
 
