@@ -132,7 +132,7 @@ function New-StormShieldOVAVmware {
                             Set-VMXSize -VMXName $VMname -Path  $Destiantion_VM_Workstation -config   "$Destiantion_VM_Workstation\$VMname\$VMname.vmx" -Size XS | Out-Null
                             Set-VMXNetworkAdapter -VMXName $VMname -config "$Destiantion_VM_Workstation\$VMname\$VMname.vmx"  -AdapterType vmxnet3 -Adapter 0 -ConnectionType bridged |Out-Null
                             
-                            if(!(Test-Path -Path "$Destiantion_VM_Workstation\$VMname\$VMname.ova"))
+                            if(!(Test-Path -Path "$Destination_OVA_VMware\$VMname.ova"))
                             {   
                                 & $VMware_OVFTool "$Destiantion_VM_Workstation\$VMname\$VMname.vmx" "$Destination_OVA_VMware\$VMname.ova"
                             }
@@ -143,13 +143,14 @@ function New-StormShieldOVAVmware {
                             for ($i = 0; $i -lt 4; $i++) {
                                 Set-VMXNetworkAdapter -VMXName $VMname -config "$Destiantion_VM_Workstation\$VMname\$VMname.vmx" -AdapterType vmxnet3 -Adapter $i -ConnectionType bridged |Out-Null
                             }
-                            if(!(Test-Path -Path "$Destiantion_VM_Workstation\$VMname\$VMname.ova"))
+                            if(!(Test-Path -Path "$Destination_OVA_VMware\$VMname.ova"))
                             {   
                                 & $VMware_OVFTool "$Destiantion_VM_Workstation\$VMname\$VMname.vmx" "$Destination_OVA_VMware\$VMname.ova"
                             }
                         }
                     }
-        }              
+        } 
+                     
     }    
 }
 function Start-StormShieldLab {
