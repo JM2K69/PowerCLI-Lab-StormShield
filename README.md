@@ -1,6 +1,8 @@
 # PowerCLI-Lab-StormShield
 
-Cet outil permet de déployer des laboratoires StormShield dans VMware vSphère 6.x **actuellement** il ne supporte pas la dernière version des `Machines virtuelles` **v4** livrées par StormShield.
+Cet outil permet de déployer des laboratoires StormShield dans VMware vSphère 6.x **actuellement** il ne supporte pas la dernière version des `Machines virtuelles` **v4** livrées par StormShield pour le **moment**.
+
+>Cela devrait arriver bientôt ! ! !
 
 # Script compatibles v4
 
