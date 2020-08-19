@@ -95,7 +95,7 @@ function New-StormShieldLabStudents {
     }
 }
 
-function New-StormShieldOVAVmware {
+function New-StormShieldOVAVMware {
 
     $Trainee = ("Debian-Training-WebMail", "SNS_EVA1_V4")
 
@@ -242,6 +242,6 @@ Start-StormShieldLab -Path $Destiantion_VM_Workstation -ScenarioName $ScenarioNa
 Export-StormShieldLabStudentsToOVA -Path $Destiantion_VM_Workstation -ScenarioName $ScenarioName -ExportPath $ExportPath
 
 #Création des OVA pour VMware vSphère 
-New-StormShieldOVAVmware
+New-StormShieldOVAVMware
 
 
